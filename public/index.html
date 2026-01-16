@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panadería La Desesperanza</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/img/logo.png?v=1">
+
+
+</head>
+<body>
+  <header class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 py-2">
+  <div class="container-fluid">
+
+    
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <img src="img/logo.png"
+           alt="Logo" width="35" class="me-2">
+      <span class="fw-bold">Panadería <span class="text-warning">La Desesperanza</span></span>
+    </a>
+
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    
+    <div class="collapse navbar-collapse" id="menuPrincipal">
+
+      <!-- CENTRO: Navegación -->
+      <ul class="nav mb-2 mb-md-0 justify-content-center flex-grow-1">
+  <li><a href="index.html" class="nav-link px-2 text-white">Tienda</a></li>
+  <li><a href="/sobre" class="nav-link px-2 text-white">Sobre Nosotros</a></li>
+  <li id="menuVentas" style="display:none;">
+    <a href="/ventas" class="nav-link px-2 text-warning fw-semibold">Ventas</a>
+  </li>
+</ul>
+
+      <!-- DERECHA: Carrito + Logout -->
+      <div class="d-flex align-items-center gap-3">
+        <a href="carrito.html" class="btn btn-outline-dark">
+          🛒 Carrito
+        </a>
+
+        <button id="btnLogout" class="btn btn-danger">
+          Cerrar sesión
+        </button>
+
+        <a href="/perfil.html" class="avatar-link" title="Mi perfil">
+    <div class="avatar" style="width:36px;height:36px;">
+      <img src="https://cdn-icons-png.freepik.com/512/12225/12225881.png" alt="perfil">
+    </div>
+  </a>
+      </div>
+
+    </div>
+
+  </div>
+</header>
+
+  <main class="contenedor">
+    <div class="text-end mb-4">
+      <button class="btn btn-añadir" data-bs-toggle="modal" data-bs-target="#modalProducto">➕ Agregar producto</button>
+    </div>
+
+    <section>
+      <h2 class="titulo-seccion">| Panes Tradicionales</h2>
+      <div class="grid-productos" id="productos-tradicional"></div>
+    </section>
+
+    <section class="mt-5">
+      <h2 class="titulo-seccion">| Panes de Temporada</h2>
+      <div class="grid-productos" id="productos-temporada"></div>
+    </section>
+
+    <table class="table d-none" id="tablaProductos"><tbody></tbody></table>
+  </main>
+
+  
+  <div class="modal fade" id="modalProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="formProducto" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Agregar / Editar Producto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input type="text" class="form-control" id="descripcion" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Precio</label>
+            <input type="number" step="0.01" class="form-control" id="precio" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Imagen (URL)</label>
+            <input type="text" class="form-control" id="imagen" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Categoría</label>
+            <select id="id_categoria" class="form-select" required>
+              <option value="">Seleccione</option>
+              <option value="1">Tradicional</option>
+              <option value="2">Temporada</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2025 Panadería “La Desesperanza” — Hecho con ❤️ y harina</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

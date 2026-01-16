@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛒 Carrito — Panadería La Desesperanza</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/img/logo.png?v=1">
+</head>
+
+<body>
+  <header class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 py-2">
+  <div class="container-fluid">
+
+    
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <img src="img/logo.png"
+           alt="Logo" width="35" class="me-2">
+      <span class="fw-bold">Panadería <span class="text-warning">La Desesperanza</span></span>
+    </a>
+
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- MENÚ -->
+    <div class="collapse navbar-collapse" id="menuPrincipal">
+
+      <!-- CENTRO: Navegación -->
+      <ul class="nav mb-2 mb-md-0 justify-content-center flex-grow-1">
+  <li><a href="index.html" class="nav-link px-2 text-dark">Tienda</a></li>
+<li><a href="/sobre" class="nav-link px-2 text-dark">Sobre Nosotros</a></li>
+  <li id="menuVentas" style="display:none;">
+    <a href="/ventas" class="nav-link px-2 text-warning fw-semibold">Ventas</a>
+  </li>
+</ul>
+
+      <!-- DERECHA: Carrito + Logout -->
+      <div class="d-flex align-items-center gap-3">
+        <a href="carrito.html" class="btn btn-outline-dark">
+          🛒 Carrito
+        </a>
+
+        <button id="btnLogout" class="btn btn-danger">
+          Cerrar sesión
+        </button>
+
+        <a href="/perfil.html" class="avatar-link" title="Mi perfil">
+    <div class="avatar" style="width:36px;height:36px;">
+      <img src="https://cdn-icons-png.freepik.com/512/12225/12225881.png" alt="perfil">
+    </div>
+  </a>
+      </div>
+
+    </div>
+
+  </div>
+</header>
+
+
+ <main class="contenedor mt-4">
+  <h2 class="titulo-seccion">🧁 Productos en tu carrito</h2>
+
+  <div class="table-responsive mt-3">
+    <table class="table table-striped align-middle shadow">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+          <th>Subtotal</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaCarrito">
+        <tr><td colspan="5" class="text-center py-4 text-muted">Cargando productos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-4">
+    <a href="index.html" class="btn btn-outline-primary btn-lg">⬅️ Seguir comprando</a>
+    <div class="text-end">
+      <h3 id="totalCarrito" class="fw-bold">Total: $0.00</h3>
+      <button id="btnPagar" class="btn btn-success btn-lg mt-2">💰 Pagar</button>
+    </div>
+  </div>
+</main>
+
+  <footer>
+    <p>© 2025 Panadería “La Desesperanza” — Hecho con amor ❤️ y harina</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+  const tabla = document.getElementById("tablaCarrito");
+  const totalCarrito = document.getElementById("totalCarrito");
+  const btnLogout = document.getElementById("btnLogout");
+  const btnPagar = document.getElementById("btnPagar");
+
+fetch("/api/session", { credentials: "include" })
+  .then(r => r.json())
+  .then(data => {
+    if (data.loggedIn && data.tipo === "admin") {
+      document.getElementById("menuVentas").style.display = "block";
+    }
+  });
+
+  //Cargar carrito
+fetch("/api/carrito", { credentials: "include" })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al obtener el carrito");
+    return res.json();
+  })
+  .then(data => {
+    // Si tu backend devuelve { carrito: [...] }, tomar data.carrito
+    if (data.carrito) data = data.carrito;
+
+    tabla.innerHTML = ""; // limpiar tabla
+
+    if (!Array.isArray(data) || data.length === 0) {
+      tabla.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            Tu carrito está vacío 😢
+          </td>
+        </tr>`;
+      totalCarrito.textContent = "Total: $0.00";
+      return;
+    }
+
+    let total = 0;
+    data.forEach(item => {
+      const precio = parseFloat(item.precio || 0);
+      const subtotal = precio * (item.cantidad || 1);
+      total += subtotal;
+
+      tabla.innerHTML += `
+        <tr>
+          <td>${item.nombre || "Sin nombre"}</td>
+          <td>$${precio.toFixed(2)}</td>
+          <td>${item.cantidad || 1}</td>
+          <td>$${subtotal.toFixed(2)}</td>
+          <td>
+            <button class="btn btn-outline-danger btn-sm eliminar" data-id="${item.id_carrito || item.id_producto}">
+              🗑️ Eliminar
+            </button>
+          </td>
+        </tr>`;
+    });
+
+    totalCarrito.textContent = `Total: $${total.toFixed(2)}`;
+
+    // Eliminar producto
+    document.querySelectorAll(".eliminar").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const id = e.target.dataset.id;
+        fetch(`/api/carrito/${id}`, {
+          method: "DELETE",
+          credentials: "include"
+        })
+          .then(res => {
+            if (!res.ok) throw new Error("Error al eliminar");
+            return res.json();
+          })
+          .then(() => {
+            e.target.closest("tr").remove();
+            recalcularTotal();
+          })
+          .catch(err => console.error("Error al eliminar:", err));
+      });
+    });
+
+    // Recalcular total
+    function recalcularTotal() {
+      let nuevoTotal = 0;
+      tabla.querySelectorAll("tr").forEach(fila => {
+        const subtotalCell = fila.children[3];
+        if (subtotalCell) {
+          const valor = parseFloat(subtotalCell.textContent.replace("$", "")) || 0;
+          nuevoTotal += valor;
+        }
+      });
+      totalCarrito.textContent = `Total: $${nuevoTotal.toFixed(2)}`;
+      if (nuevoTotal === 0) {
+        tabla.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">
+              Tu carrito está vacío 😢
+            </td>
+          </tr>`;
+      }
+    }
+  })
+  .catch(err => {
+    console.error("Error al cargar productos:", err);
+    tabla.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-danger py-4">
+          Error al cargar los productos 😵
+        </td>
+      </tr>`;
+  });
+
+  // Pagar
+  document.getElementById("btnPagar").addEventListener("click", async () => {
+  if (!confirm("¿Confirmar compra?")) return;
+  try {
+    const resp = await fetch("/api/pagar", {
+      method: "POST",
+      credentials: "include"
+    });
+    const data = await resp.json();
+    if (!resp.ok) return alert(data.mensaje || data.error || 'Error al pagar');
+    alert(data.mensaje || 'Compra ok');
+    // abrir ticket en nueva pestaña
+    if (data.ticket) window.open(data.ticket, '_blank');
+    // recargar pagina carrito o index
+    location.reload();
+  } catch (err) {
+    console.error(err);
+    alert("Error al procesar el pago");
+  }
+});
+
+  // Cerrar sesión
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      fetch("/api/logout", { method: "POST", credentials: "include" })
+        .then(() => window.location.href = "login.html");
+    });
+  }
+});
+
+  </script>
+</body>
+</html>
