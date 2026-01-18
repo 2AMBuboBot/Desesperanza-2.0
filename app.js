@@ -603,7 +603,7 @@ app.post('/api/perfil/fondos', requireLogin, async (req, res) => {
 
     if (!id_cliente) return res.status(403).json({ error: 'No autorizado' });
     const add = parseFloat(importe);
-    if (isNaN(add) || add <= 0) return res.status(400).json({ error: 'Importe inválido' });
+    if (isNaN(add) || add <= 0) return res.status(400).json({ error: 'Cantidad inválida' });
 
     const [rows] = await promisePool.query('SELECT saldo FROM cliente WHERE id_cliente = ?', [id_cliente]);
     if (!rows.length) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -690,12 +690,10 @@ const doc = new PDFDocument({ margin: 40, size: 'A4' });
 res.setHeader('Content-Type', 'application/pdf');
 res.setHeader('Content-Disposition', `attachment; filename=ticket_${id_compra}.pdf`);
 
-// Pipe al response
+
 doc.pipe(res);
 
-/* ===============================
-   ENCABEZADO
-================================ */
+
 doc
   .fontSize(22)
   .font('Helvetica-Bold')
@@ -716,9 +714,7 @@ doc
   .lineTo(550, doc.y)
   .stroke();
 
-/* ===============================
-   INFO DE COMPRA
-================================ */
+
 doc.moveDown(1);
 
 doc.fontSize(12).font('Helvetica-Bold').text(`Folio: ${compra.id_compra}`);
@@ -737,9 +733,7 @@ doc
   .lineTo(550, doc.y)
   .stroke();
 
-/* ===============================
-   LISTA DE PRODUCTOS
-================================ */
+
 doc.moveDown(1);
 doc.fontSize(14).font('Helvetica-Bold').text('Productos:');
 
@@ -767,9 +761,7 @@ doc
   .lineTo(550, doc.y)
   .stroke();
 
-/* ===============================
-   TOTAL
-================================ */
+
 doc.moveDown(1);
 
 doc
@@ -780,13 +772,35 @@ doc
     { align: 'right' }
   );
 
-/* ===============================
-   FINALIZAR PDF
-================================ */
+
     doc.end();
   } catch (err) {
     console.error('Error generando ticket:', err);
     res.status(500).send('Error generando ticket');
+  }
+});
+
+app.get("/api/ventas/historial", async (req, res) => {
+  if (req.session.tipo !== "admin") {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+
+  try {
+    const [rows] = await promisePool.query(`
+      SELECT 
+        c.id_compra,
+        c.fecha_compra,
+        c.total,
+        cl.nombre AS cliente
+      FROM compra c
+      JOIN cliente cl ON c.id_cliente = cl.id_cliente
+      ORDER BY c.fecha_compra DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error historial ventas:", err);
+    res.status(500).json({ error: "Error en servidor" });
   }
 });
 
