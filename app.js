@@ -668,13 +668,38 @@ app.get('/api/perfil/compras/:id', requireLogin, async (req, res) => {
 app.get('/api/ticket/:id_compra', requireLogin, async (req, res) => {
   try {
     const id_compra = req.params.id_compra;
-    const id_cliente = req.session.id_cliente;
+    const tipo = req.session.tipo;
 
-    // Verificamos que la compra pertenezca al cliente
-    const [check] = await promisePool.query('SELECT * FROM compra WHERE id_compra = ? AND id_cliente = ?', [id_compra, id_cliente]);
-    if (check.length === 0) return res.status(404).send('No autorizado o compra no encontrada');
+    let compra;
 
-    const compra = check[0];
+    if (tipo === "cliente") {
+      const id_cliente = req.session.id_cliente;
+
+      const [check] = await promisePool.query(
+        'SELECT * FROM compra WHERE id_compra = ? AND id_cliente = ?',
+        [id_compra, id_cliente]
+      );
+
+      if (check.length === 0) {
+        return res.status(404).send('No autorizado o compra no encontrada');
+      }
+
+      compra = check[0];
+
+    } else if (tipo === "admin") {
+      const [check] = await promisePool.query(
+        'SELECT * FROM compra WHERE id_compra = ?',
+        [id_compra]
+      );
+
+      if (check.length === 0) {
+        return res.status(404).send('Compra no encontrada');
+      }
+
+      compra = check[0];
+    } else {
+      return res.status(403).send("No autorizado");
+    }
 
     const [detalles] = await promisePool.query(`
       SELECT dc.cantidad, dc.precio_unitario, dc.subtotal, p.nombre
@@ -683,97 +708,60 @@ app.get('/api/ticket/:id_compra', requireLogin, async (req, res) => {
       WHERE dc.id_compra = ?
     `, [id_compra]);
 
-    // Generar PDF con PDFKit
-const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
-// Headers para descarga
-res.setHeader('Content-Type', 'application/pdf');
-res.setHeader('Content-Disposition', `attachment; filename=ticket_${id_compra}.pdf`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=ticket_${id_compra}.pdf`);
 
+    doc.pipe(res);
 
-doc.pipe(res);
+    doc
+      .fontSize(22)
+      .font('Helvetica-Bold')
+      .text('Panadería La Desesperanza', { align: 'center' });
 
+    doc.moveDown(0.3);
 
-doc
-  .fontSize(22)
-  .font('Helvetica-Bold')
-  .text('Panadería La Desesperanza', { align: 'center' });
+    doc
+      .fontSize(10)
+      .font('Helvetica-Oblique')
+      .text('¡Gracias por su compra!', { align: 'center' });
 
-doc.moveDown(0.3);
+    doc.moveDown(1);
 
-doc
-  .fontSize(10)
-  .font('Helvetica-Oblique')
-  .text('¡Gracias por su compra!', { align: 'center' });
+    doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(1);
 
-doc.moveDown(1);
+    doc.fontSize(12).font('Helvetica-Bold').text(`Folio: ${compra.id_compra}`);
+    doc.moveDown(0.2);
+    doc.fontSize(12).font('Helvetica').text(`Fecha: ${new Date(compra.fecha_compra).toLocaleString()}`);
 
-// Línea decorativa
-doc
-  .moveTo(40, doc.y)
-  .lineTo(550, doc.y)
-  .stroke();
+    doc.moveDown(0.8);
+    doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(1);
 
+    doc.fontSize(14).font('Helvetica-Bold').text('Productos:');
+    doc.moveDown(0.5);
 
-doc.moveDown(1);
+    detalles.forEach((d) => {
+      doc
+        .fontSize(12)
+        .font('Helvetica')
+        .text(`${d.cantidad} × ${d.nombre}`, { continued: true })
+        .text(`  $${parseFloat(d.subtotal).toFixed(2)}`, { align: 'right' });
+    });
 
-doc.fontSize(12).font('Helvetica-Bold').text(`Folio: ${compra.id_compra}`);
-doc.moveDown(0.2);
+    doc.moveDown(0.8);
+    doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(1);
 
-doc
-  .fontSize(12)
-  .font('Helvetica')
-  .text(`Fecha: ${new Date(compra.fecha_compra).toLocaleString()}`);
-
-doc.moveDown(0.8);
-
-// Línea decorativa
-doc
-  .moveTo(40, doc.y)
-  .lineTo(550, doc.y)
-  .stroke();
-
-
-doc.moveDown(1);
-doc.fontSize(14).font('Helvetica-Bold').text('Productos:');
-
-doc.moveDown(0.5);
-
-detalles.forEach((d) => {
-  doc
-    .fontSize(12)
-    .font('Helvetica')
-    .text(
-      `${d.cantidad} × ${d.nombre}`,
-      { continued: true }
-    )
-    .text(
-      `  $${parseFloat(d.subtotal).toFixed(2)}`,
-      { align: 'right' }
-    );
-});
-
-doc.moveDown(0.8);
-
-// Línea decorativa
-doc
-  .moveTo(40, doc.y)
-  .lineTo(550, doc.y)
-  .stroke();
-
-
-doc.moveDown(1);
-
-doc
-  .fontSize(16)
-  .font('Helvetica-Bold')
-  .text(
-    `TOTAL: $${parseFloat(compra.total).toFixed(2)}`,
-    { align: 'right' }
-  );
-
+    doc
+      .fontSize(16)
+      .font('Helvetica-Bold')
+      .text(`TOTAL: $${parseFloat(compra.total).toFixed(2)}`, { align: 'right' });
 
     doc.end();
+
   } catch (err) {
     console.error('Error generando ticket:', err);
     res.status(500).send('Error generando ticket');

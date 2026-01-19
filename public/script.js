@@ -161,6 +161,10 @@ if (window.userType === "admin") {
     }
   }
 
+  function contieneHTML(texto) {
+  const regex = /<[^>]*>/g;
+  return regex.test(texto);
+}
 
   // Agregar o editar producto 
   form.addEventListener("submit", async (e) => {
@@ -176,6 +180,8 @@ if (window.userType === "admin") {
 
     if (!regexTexto.test(nombre)) return alert("El nombre no puede contener números");
     if (!regexTexto.test(descripcion)) return alert("La descripción no puede contener números");
+    if (contieneHTML(nombre)) return alert("El nombre no puede contener etiquetas");
+    if (contieneHTML(descripcion)) return alert("La descripción no puede contener etiquetas");
     if (isNaN(precio) || precio <= 0) return alert("El precio debe ser un número mayor que 0");
 
     const producto = { nombre, descripcion, precio, imagen, id_categoria };
